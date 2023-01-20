@@ -8,18 +8,17 @@ use clap::Parser;
 use tracing::debug;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
-/// Calls the AWS GetCallerIdentity API to get the
-/// caller identity and prints the result.
-///
-/// There is little reason to run this tool.
-/// My goal here is a simple, complete example for a
-/// command line program that makes calls to AWS.
+/// Summarize the status of every AWS Elastic Network Interface, eni.
+/// Optionally, delete every ENI with a status of "available".
 ///
 /// You can set the environment variable `RUST_LOG` to
 /// adjust logging, for example `RUST_LOG=trace aws-caller-id`
 #[derive(Clone, Debug, Parser)]
 #[command(about, author, version)]
 struct MyArgs {
+    /// Delete "available" ENIs.
+    #[arg(long, short)]
+    delete: bool,
     /// AWS profile to use.
     ///
     /// This overrides the standard (and complex!) AWS profile handling.
@@ -46,54 +45,49 @@ async fn aws_sdk_config(args: &MyArgs) -> SdkConfig {
     with_overrides.load().await
 }
 
-/// Wrapper for Option<&NetworkInterfaceStatus> to use as a key in a HashMap
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-enum FlatStatus {
-    Status(NetworkInterfaceStatus),
-    None,
-}
-
-// TODO: Write a Display for FlatStatus.
-// To use the `{}` marker, the trait `fmt::Display` must be implemented
-// manually for the type.
-impl std::fmt::Display for FlatStatus {
-    // This trait requires `fmt` with this exact signature.
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        // Write strictly the first element into the supplied output
-        // stream: `f`. Returns `fmt::Result` which indicates whether the
-        // operation succeeded or failed. Note that `write!` uses syntax which
-        // is very similar to `println!`.
-        write!(
-            f,
-            "{}",
-            match self {
-                FlatStatus::Status(status) => match status {
-                    NetworkInterfaceStatus::Associated => "associated",
-                    NetworkInterfaceStatus::Attaching => "attaching",
-                    NetworkInterfaceStatus::Available => "available",
-                    NetworkInterfaceStatus::Detaching => "detaching",
-                    NetworkInterfaceStatus::InUse => "in-use",
-                    _ => "unknown",
-                },
-                FlatStatus::None => "none",
-            }
-        )
-    }
-}
-
 fn status_counts<'a>(
-    network_interfaces: DescribeNetworkInterfacesOutput,
-) -> HashMap<FlatStatus, u64> {
+    network_interfaces: &DescribeNetworkInterfacesOutput,
+) -> HashMap<&'a str, u64> {
     let mut counts = HashMap::new();
     for eni in network_interfaces.network_interfaces().unwrap_or_default() {
         let key = match eni.status() {
-            Some(status) => FlatStatus::Status(status.clone()),
-            None => FlatStatus::None,
+            Some(status) => match status {
+                NetworkInterfaceStatus::Associated => "associated",
+                NetworkInterfaceStatus::Attaching => "attaching",
+                NetworkInterfaceStatus::Available => "available",
+                NetworkInterfaceStatus::Detaching => "detaching",
+                NetworkInterfaceStatus::InUse => "in-use",
+                _ => "unknown",
+            },
+            None => "none",
         };
-        let plus_one = 1 + counts.get(&key).unwrap_or(&0);
-        counts.insert(key, plus_one);
+        counts.insert(key, 1 + counts.get(&key).unwrap_or(&0));
     }
     counts
+}
+
+async fn delete_available<'a>(
+    client: &Client,
+    network_interfaces: &DescribeNetworkInterfacesOutput,
+) -> Result<()> {
+    for eni in network_interfaces.network_interfaces().unwrap_or_default() {
+        if let Some(status) = eni.status() {
+            if status == &NetworkInterfaceStatus::Available {
+                if let Some(network_interface_id) = eni.network_interface_id() {
+                    println!("Deleting {}", network_interface_id);
+                    let result = client
+                        .delete_network_interface()
+                        .network_interface_id(network_interface_id)
+                        .send()
+                        .await?;
+                    debug!("{:#?}", result);
+                } else {
+                    println!("Ignoring available network interface with no ID");
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 #[tokio::main]
@@ -104,7 +98,7 @@ async fn main() -> Result<()> {
         .init();
     let args = MyArgs::parse();
     let config = aws_sdk_config(&args).await;
-    debug!("Config: {:?}", config);
+    debug!("Config: {:#?}", config);
     let client = Client::new(&config);
     let result = client
         .describe_network_interfaces()
@@ -112,10 +106,14 @@ async fn main() -> Result<()> {
         .await
         .context("calling describe_network_interfaces")?;
     debug!("{:#?}", result);
-    let counts = status_counts(result);
+    let counts = status_counts(&result);
     println!(" count  status");
     for (key, value) in counts.into_iter() {
         println!("{:6}  {}", value, key);
     }
-    Ok(())
+    if args.delete {
+        delete_available(&client, &result).await
+    } else {
+        Ok(())
+    }
 }
