@@ -46,50 +46,52 @@ async fn aws_sdk_config(args: &MyArgs) -> SdkConfig {
     with_overrides.load().await
 }
 
-#[derive(Debug, Eq, Hash, PartialEq)]
+/// Wrapper for Option<&NetworkInterfaceStatus> to use as a key in a HashMap
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 enum FlatStatus {
-    Associated,
-    Attaching,
-    Available,
-    Detaching,
-    InUse,
+    Status(NetworkInterfaceStatus),
     None,
-    Unknown,
 }
 
-fn status_counts(network_interfaces: DescribeNetworkInterfacesOutput) -> HashMap<FlatStatus, u64> {
-    let mut counts: HashMap<FlatStatus, u64> = HashMap::new();
+// TODO: Write a Display for FlatStatus.
+// To use the `{}` marker, the trait `fmt::Display` must be implemented
+// manually for the type.
+impl std::fmt::Display for FlatStatus {
+    // This trait requires `fmt` with this exact signature.
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        // Write strictly the first element into the supplied output
+        // stream: `f`. Returns `fmt::Result` which indicates whether the
+        // operation succeeded or failed. Note that `write!` uses syntax which
+        // is very similar to `println!`.
+        write!(
+            f,
+            "{}",
+            match self {
+                FlatStatus::Status(status) => match status {
+                    NetworkInterfaceStatus::Associated => "associated",
+                    NetworkInterfaceStatus::Attaching => "attaching",
+                    NetworkInterfaceStatus::Available => "available",
+                    NetworkInterfaceStatus::Detaching => "detaching",
+                    NetworkInterfaceStatus::InUse => "in-use",
+                    _ => "unknown",
+                },
+                FlatStatus::None => "none",
+            }
+        )
+    }
+}
+
+fn status_counts<'a>(
+    network_interfaces: DescribeNetworkInterfacesOutput,
+) -> HashMap<FlatStatus, u64> {
+    let mut counts = HashMap::new();
     for eni in network_interfaces.network_interfaces().unwrap_or_default() {
-        match eni.status() {
-            Some(NetworkInterfaceStatus::Associated) => counts.insert(
-                FlatStatus::Associated,
-                1 + counts.get(&FlatStatus::Associated).unwrap_or(&1),
-            ),
-            Some(NetworkInterfaceStatus::Attaching) => counts.insert(
-                FlatStatus::Attaching,
-                1 + counts.get(&FlatStatus::Attaching).unwrap_or(&1),
-            ),
-            Some(NetworkInterfaceStatus::Available) => counts.insert(
-                FlatStatus::Available,
-                1 + counts.get(&FlatStatus::Available).unwrap_or(&1),
-            ),
-            Some(NetworkInterfaceStatus::Detaching) => counts.insert(
-                FlatStatus::Detaching,
-                1 + counts.get(&FlatStatus::Detaching).unwrap_or(&1),
-            ),
-            Some(NetworkInterfaceStatus::InUse) => counts.insert(
-                FlatStatus::InUse,
-                1 + counts.get(&FlatStatus::InUse).unwrap_or(&1),
-            ),
-            None => counts.insert(
-                FlatStatus::None,
-                1 + counts.get(&FlatStatus::None).unwrap_or(&1),
-            ),
-            _ => counts.insert(
-                FlatStatus::Unknown,
-                1 + counts.get(&FlatStatus::Unknown).unwrap_or(&1),
-            ),
+        let key = match eni.status() {
+            Some(status) => FlatStatus::Status(status.clone()),
+            None => FlatStatus::None,
         };
+        let plus_one = 1 + counts.get(&key).unwrap_or(&0);
+        counts.insert(key, plus_one);
     }
     counts
 }
@@ -113,7 +115,7 @@ async fn main() -> Result<()> {
     let counts = status_counts(result);
     println!(" count  status");
     for (key, value) in counts.into_iter() {
-        println!("{:6}  {:?}", value, key);
+        println!("{:6}  {}", value, key);
     }
     Ok(())
 }
