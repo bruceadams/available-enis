@@ -5,7 +5,6 @@ authors = ["Bruce Adams <bruce.adams@acm.org>"]
 description = "Count and optionally delete available AWS Elastic Networks"
 edition = "2021"
 
-
 [dependencies]
 anyhow = "1.0.68"
 aws-config = "0.53.0"

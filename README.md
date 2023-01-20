@@ -1,21 +1,25 @@
-# AWS Caller ID
+# Available AWS Elastice Network Interfaces
 
-This tool exists as a concrete, complete example of
-a Rust command line tool that interacts with AWS.
+Summarize the status of every AWS Elastic Network Interface, eni.
+Optionally, delete every ENI with a status of "available".
 
-I do not think this running tool is very useful.
-My plan is to use this a sort-of template when
-writing AWS command line tools in the future.
+This is a very narrow tool that pretty much does one thing:
+cleanup stray Elastice Network Interfaces that seem to fall
+out of a very complex terraform configuration that we build
+and tear down regularly.
+
+This is _very_ fast. The deletes all run concurrently.
 
 ## Built in help
 
 ```
-aws-caller-id -h
-Print AWS caller identity
+available-enis -h
+Count and optionally delete available AWS Elastic Networks
 
-Usage: aws-caller-id [OPTIONS]
+Usage: available-enis [OPTIONS]
 
 Options:
+  -d, --delete             Delete "available" ENIs
   -p, --profile <PROFILE>  AWS profile to use
   -r, --region <REGION>    AWS region to target
   -h, --help               Print help (see more with '--help')
@@ -23,19 +27,19 @@ Options:
 ```
 
 ```
-aws-caller-id --help
-Calls the AWS GetCallerIdentity API to get the caller identity and prints
-the result.
-
-There is little reason to run this tool. My goal here is a simple, complete
-example for a command line program that makes calls to AWS.
+available-enis --help
+Summarize the status of every AWS Elastic Network Interface, eni.
+Optionally, delete every ENI with a status of "available".
 
 You can set the environment variable `RUST_LOG` to adjust logging, for
 example `RUST_LOG=trace aws-caller-id`
 
-Usage: aws-caller-id [OPTIONS]
+Usage: available-enis [OPTIONS]
 
 Options:
+  -d, --delete
+          Delete "available" ENIs
+
   -p, --profile <PROFILE>
           AWS profile to use.
 
