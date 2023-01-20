@@ -1,10 +1,14 @@
-use std::collections::HashMap;
-
 use anyhow::{Context, Result};
 use aws_config::SdkConfig;
-use aws_sdk_ec2::{model::NetworkInterfaceStatus, output::DescribeNetworkInterfacesOutput, Client};
+use aws_sdk_ec2::{
+    error::DeleteNetworkInterfaceError, model::NetworkInterfaceStatus,
+    output::DescribeNetworkInterfacesOutput, types::SdkError, Client,
+};
 use aws_types::region::Region;
 use clap::Parser;
+use futures::future::join_all;
+use futures::prelude::*;
+use std::collections::HashMap;
 use tracing::debug;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
@@ -66,28 +70,37 @@ fn status_counts<'a>(
     counts
 }
 
+/// Attempt to delete every "available" ENI concurrently.
 async fn delete_available<'a>(
     client: &Client,
     network_interfaces: &DescribeNetworkInterfacesOutput,
-) -> Result<()> {
-    for eni in network_interfaces.network_interfaces().unwrap_or_default() {
-        if let Some(status) = eni.status() {
-            if status == &NetworkInterfaceStatus::Available {
-                if let Some(network_interface_id) = eni.network_interface_id() {
-                    println!("Deleting {}", network_interface_id);
-                    let result = client
-                        .delete_network_interface()
-                        .network_interface_id(network_interface_id)
-                        .send()
-                        .await?;
-                    debug!("{:#?}", result);
-                } else {
-                    println!("Ignoring available network interface with no ID");
-                }
+) -> Result<(), SdkError<DeleteNetworkInterfaceError>> {
+    let futures = network_interfaces
+        .network_interfaces()
+        .unwrap_or_default()
+        .iter()
+        .filter(|eni| eni.status() == Some(&NetworkInterfaceStatus::Available))
+        .map(|eni| eni.network_interface_id().unwrap())
+        .map(|network_interface_id| {
+            client
+                .delete_network_interface()
+                .network_interface_id(network_interface_id)
+                .send()
+                .map(move |result| (network_interface_id, result))
+        });
+    let results = join_all(futures).await;
+    // The Result we return will be the last Err we saw, if any.
+    let mut my_return = Ok(());
+    for (network_interface_id, result) in results {
+        match result {
+            Ok(_) => println!("Deleted {}", network_interface_id),
+            Err(error) => {
+                eprintln!("Delete failed for {}: {}", network_interface_id, error);
+                my_return = Err(error)
             }
         }
     }
-    Ok(())
+    my_return
 }
 
 #[tokio::main]
@@ -112,8 +125,7 @@ async fn main() -> Result<()> {
         println!("{:6}  {}", value, key);
     }
     if args.delete {
-        delete_available(&client, &result).await
-    } else {
-        Ok(())
+        delete_available(&client, &result).await?
     }
+    Ok(())
 }
