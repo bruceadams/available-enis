@@ -12,6 +12,8 @@ This is _very_ fast. The deletes all run concurrently.
 
 ## Built in help
 
+### Terse
+
 ```
 available-enis -h
 Count and optionally delete available AWS Elastic Networks
@@ -25,6 +27,8 @@ Options:
   -h, --help               Print help (see more with '--help')
   -V, --version            Print version
 ```
+
+### Complete
 
 ```
 available-enis --help
@@ -55,4 +59,37 @@ Options:
 
   -V, --version
           Print version
+```
+
+## Background
+
+I've been using the following Bash which uses the AWS CLI.
+This script is slow, deleting around two ENIs per second
+and isn't especially informative.
+
+Writing a solid program in Rust is maybe over-engineering the problem.
+I enjoyed having a practical usecase in front of me to write another
+Rust CLI. I'm pleased that the tool defaults to making no changes,
+simply reporting counts of ENI statuses it finds.
+
+```bash
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+available_enis=$(
+    aws ec2 describe-network-interfaces |
+        jq -r '.NetworkInterfaces[] | select( .Status == "available" ) | .NetworkInterfaceId'
+)
+
+if [[ "$available_enis" ]]; then
+    echo "Found $(echo -n "$available_enis" | wc -l) available enis"
+
+    for eni in $available_enis; do
+        echo "$eni"
+        aws ec2 delete-network-interface --network-interface-id "$eni"
+    done
+else
+    echo No available enis found
+fi
 ```
