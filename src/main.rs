@@ -106,8 +106,9 @@ async fn delete_available<'a>(
         match result {
             Ok(_) => println!("Deleted {}", network_interface_id),
             Err(error) => {
-                error!("Delete failed for {}: {}", network_interface_id, error);
-                return_result = Err(error.into())
+                let error = error.into();
+                error!("Delete failed for {}: {:?}", network_interface_id, error);
+                return_result = Err(error);
             }
         }
     }
@@ -136,7 +137,9 @@ async fn main() -> Result<()> {
         println!("{:6}  {}", value, key);
     }
     if args.delete {
-        delete_available(&client, &result).await?
+        delete_available(&client, &result)
+            .await
+            .context("deleting available enis")?
     }
     Ok(())
 }
