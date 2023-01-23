@@ -69,7 +69,7 @@ async fn get_network_interfaces(client: &Client) -> Result<Vec<NetworkInterface>
     Ok(network_interfaces)
 }
 
-fn status_counts<'a>(network_interfaces: &Vec<NetworkInterface>) -> HashMap<&'a str, u64> {
+fn print_status_counts<'a>(network_interfaces: &Vec<NetworkInterface>) {
     let mut counts = HashMap::new();
     for eni in network_interfaces {
         let key = match eni.status() {
@@ -85,7 +85,18 @@ fn status_counts<'a>(network_interfaces: &Vec<NetworkInterface>) -> HashMap<&'a 
         };
         counts.insert(key, 1 + counts.get(&key).unwrap_or(&0));
     }
-    counts
+
+    let mut statuses: Vec<&str> = counts.keys().map(|s| *s).collect();
+    statuses.sort();
+    println!("    count  status");
+    println!("   ------  ---------");
+    for status in statuses {
+        println!("{:9}  {}", counts.get(status).unwrap_or(&0), status);
+    }
+    if counts.len() > 1 {
+        println!("   ------  ---------");
+        println!("{:9}  total", network_interfaces.len());
+    }
 }
 
 /// Attempt to delete every "available" ENI concurrently.
@@ -143,11 +154,7 @@ async fn main() -> Result<()> {
     debug!("Config: {:#?}", config);
     let client = Client::new(&config);
     let network_interfaces = get_network_interfaces(&client).await?;
-    let counts = status_counts(&network_interfaces);
-    println!(" count  status");
-    for (key, value) in counts.into_iter() {
-        println!("{:6}  {}", value, key);
-    }
+    print_status_counts(&network_interfaces);
     if args.delete {
         delete_available(&client, &network_interfaces)
             .await
