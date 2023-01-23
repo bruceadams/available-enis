@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Context, Result};
 use aws_config::SdkConfig;
-use aws_sdk_ec2::{model::NetworkInterfaceStatus, output::DescribeNetworkInterfacesOutput, Client};
+use aws_sdk_ec2::{model::NetworkInterface, model::NetworkInterfaceStatus, Client};
 use aws_types::region::Region;
 use clap::Parser;
 use futures::future::join_all;
@@ -46,11 +46,32 @@ async fn aws_sdk_config(args: &MyArgs) -> SdkConfig {
     with_overrides.load().await
 }
 
-fn status_counts<'a>(
-    network_interfaces: &DescribeNetworkInterfacesOutput,
-) -> HashMap<&'a str, u64> {
+async fn get_network_interfaces(client: &Client) -> Result<Vec<NetworkInterface>> {
+    let mut result = client
+        .describe_network_interfaces()
+        .send()
+        .await
+        .context("calling describe_network_interfaces")?;
+    debug!("{:#?}", result);
+    let mut network_interfaces = result.network_interfaces().unwrap_or_default().to_vec();
+
+    while let Some(next_token) = result.next_token() {
+        result = client
+            .describe_network_interfaces()
+            .next_token(next_token)
+            .send()
+            .await
+            .context("calling describe_network_interfaces")?;
+        debug!("{:#?}", result);
+        network_interfaces.extend_from_slice(result.network_interfaces().unwrap_or_default())
+    }
+
+    Ok(network_interfaces)
+}
+
+fn status_counts<'a>(network_interfaces: &Vec<NetworkInterface>) -> HashMap<&'a str, u64> {
     let mut counts = HashMap::new();
-    for eni in network_interfaces.network_interfaces().unwrap_or_default() {
+    for eni in network_interfaces {
         let key = match eni.status() {
             Some(status) => match status {
                 NetworkInterfaceStatus::Associated => "associated",
@@ -70,27 +91,23 @@ fn status_counts<'a>(
 /// Attempt to delete every "available" ENI concurrently.
 async fn delete_available<'a>(
     client: &Client,
-    network_interfaces: &DescribeNetworkInterfacesOutput,
+    network_interfaces: &Vec<NetworkInterface>,
 ) -> Result<()> {
     // We hope for success, but will return the last error we saw, if any.
     let mut return_result = Ok(());
 
-    let available_network_interface_ids = network_interfaces
-        .network_interfaces()
-        .unwrap_or_default()
-        .iter()
-        .filter_map(|eni| {
-            if eni.status() == Some(&NetworkInterfaceStatus::Available) {
-                let network_interface_id = eni.network_interface_id();
-                if network_interface_id.is_none() {
-                    error!("Ignoring available ENI which has no network_interface_id.");
-                    return_result = Err(anyhow!("available ENI has no network_interface_id"));
-                }
-                network_interface_id
-            } else {
-                None
+    let available_network_interface_ids = network_interfaces.iter().filter_map(|eni| {
+        if eni.status() == Some(&NetworkInterfaceStatus::Available) {
+            let network_interface_id = eni.network_interface_id();
+            if network_interface_id.is_none() {
+                error!("Ignoring available ENI which has no network_interface_id.");
+                return_result = Err(anyhow!("available ENI has no network_interface_id"));
             }
-        });
+            network_interface_id
+        } else {
+            None
+        }
+    });
 
     let futures = available_network_interface_ids.map(|network_interface_id| {
         client
@@ -125,19 +142,14 @@ async fn main() -> Result<()> {
     let config = aws_sdk_config(&args).await;
     debug!("Config: {:#?}", config);
     let client = Client::new(&config);
-    let result = client
-        .describe_network_interfaces()
-        .send()
-        .await
-        .context("calling describe_network_interfaces")?;
-    debug!("{:#?}", result);
-    let counts = status_counts(&result);
+    let network_interfaces = get_network_interfaces(&client).await?;
+    let counts = status_counts(&network_interfaces);
     println!(" count  status");
     for (key, value) in counts.into_iter() {
         println!("{:6}  {}", value, key);
     }
     if args.delete {
-        delete_available(&client, &result)
+        delete_available(&client, &network_interfaces)
             .await
             .context("deleting available enis")?
     }
