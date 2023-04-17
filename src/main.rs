@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Context, Result};
 use aws_config::SdkConfig;
-use aws_sdk_ec2::{model::NetworkInterface, model::NetworkInterfaceStatus, Client};
+use aws_sdk_ec2::{types::NetworkInterface, types::NetworkInterfaceStatus, Client};
 use aws_types::region::Region;
 use clap::Parser;
 use futures::future::join_all;
@@ -69,7 +69,7 @@ async fn get_network_interfaces(client: &Client) -> Result<Vec<NetworkInterface>
     Ok(network_interfaces)
 }
 
-fn print_status_counts<'a>(network_interfaces: &Vec<NetworkInterface>) {
+fn print_status_counts(network_interfaces: &Vec<NetworkInterface>) {
     let mut counts = HashMap::new();
     for eni in network_interfaces {
         let key = match eni.status() {
@@ -86,7 +86,7 @@ fn print_status_counts<'a>(network_interfaces: &Vec<NetworkInterface>) {
         counts.insert(key, 1 + counts.get(&key).unwrap_or(&0));
     }
 
-    let mut statuses: Vec<&str> = counts.keys().map(|s| *s).collect();
+    let mut statuses: Vec<&str> = counts.keys().copied().collect();
     statuses.sort();
     println!("    count  status");
     println!("   ------  ---------");
@@ -102,7 +102,7 @@ fn print_status_counts<'a>(network_interfaces: &Vec<NetworkInterface>) {
 /// Attempt to delete every "available" ENI concurrently.
 async fn delete_available<'a>(
     client: &Client,
-    network_interfaces: &Vec<NetworkInterface>,
+    network_interfaces: &[NetworkInterface],
 ) -> Result<()> {
     // We hope for success, but will return the last error we saw, if any.
     let mut return_result = Ok(());
