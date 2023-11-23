@@ -1,10 +1,10 @@
-# Available AWS Elastice Network Interfaces
+# Available AWS Elastic Network Interfaces
 
 Summarize the status of every AWS Elastic Network Interface, eni.
 Optionally, delete every ENI with a status of "available".
 
 This is a very narrow tool that pretty much does one thing:
-cleanup stray Elastice Network Interfaces that seem to fall
+cleanup stray Elastic Network Interfaces that seem to fall
 out of a very complex terraform configuration that we build
 and tear down regularly.
 
@@ -68,7 +68,7 @@ This script is slow, deleting around two ENIs per second
 and isn't especially informative.
 
 Writing a solid program in Rust is maybe over-engineering the problem.
-I enjoyed having a practical usecase in front of me to write another
+I enjoyed having a practical use case in front of me to write another
 Rust CLI. I'm pleased that the tool defaults to making no changes,
 simply reporting counts of ENI statuses it finds.
 
