@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Context, Result};
-use aws_config::SdkConfig;
+use aws_config::{BehaviorVersion, SdkConfig};
 use aws_sdk_ec2::{types::NetworkInterface, types::NetworkInterfaceStatus, Client};
 use aws_types::region::Region;
 use clap::Parser;
@@ -34,7 +34,7 @@ struct MyArgs {
 }
 
 async fn aws_sdk_config(args: &MyArgs) -> SdkConfig {
-    let base = aws_config::from_env();
+    let base = aws_config::defaults(BehaviorVersion::latest());
     let with_profile = match &args.profile {
         None => base,
         Some(profile_name) => base.profile_name(profile_name),
@@ -53,7 +53,7 @@ async fn get_network_interfaces(client: &Client) -> Result<Vec<NetworkInterface>
         .await
         .context("calling describe_network_interfaces")?;
     debug!("{:#?}", result);
-    let mut network_interfaces = result.network_interfaces().unwrap_or_default().to_vec();
+    let mut network_interfaces = result.network_interfaces().to_vec();
 
     while let Some(next_token) = result.next_token() {
         result = client
@@ -63,7 +63,7 @@ async fn get_network_interfaces(client: &Client) -> Result<Vec<NetworkInterface>
             .await
             .context("calling describe_network_interfaces")?;
         debug!("{:#?}", result);
-        network_interfaces.extend_from_slice(result.network_interfaces().unwrap_or_default())
+        network_interfaces.extend_from_slice(result.network_interfaces())
     }
 
     Ok(network_interfaces)
