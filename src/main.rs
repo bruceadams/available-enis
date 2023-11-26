@@ -1,13 +1,10 @@
-use std::time::Duration;
-
 use anyhow::{anyhow, Context, Result};
 use aws_config::{identity::IdentityCache, BehaviorVersion, SdkConfig};
 use aws_sdk_ec2::{types::NetworkInterface, types::NetworkInterfaceStatus, Client};
 use aws_types::region::Region;
 use clap::Parser;
-use futures::future::join_all;
-use futures::prelude::*;
-use std::collections::HashMap;
+use futures::{future::join_all, prelude::*};
+use std::{collections::HashMap, time::Duration};
 use tracing::{debug, error};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
