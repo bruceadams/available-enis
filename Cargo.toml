@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Bruce Adams <bruce.adams@acm.org>"]
 description = "Count and optionally delete available AWS Elastic Networks"
 edition = "2021"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 anyhow = "1.0.75"
