@@ -1,6 +1,6 @@
 [package]
 name = "available-enis"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Bruce Adams <bruce.adams@acm.org>"]
 description = "Count and optionally delete available AWS Elastic Networks"
 edition = "2021"

@@ -61,6 +61,48 @@ Options:
           Print version
 ```
 
+## Installing
+
+### Install prebuilt binaries via shell script
+
+```sh
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/bruceadams/available-enis/releases/latest/download/available-enis-installer.sh | sh
+```
+
+### Install prebuilt binaries via powershell script
+
+```sh
+irm https://github.com/bruceadams/available-enis/releases/latest/download/available-enis-installer.ps1 | iex
+```
+
+### Install prebuilt binaries via Homebrew
+
+```sh
+brew install bruceadams/homebrew-utilities/available-enis
+```
+
+### Install prebuilt binaries via cargo binstall
+
+```sh
+cargo binstall available-enis
+```
+
+## Download
+
+|  File  | Platform | Checksum |
+|--------|----------|----------|
+| [available-enis-aarch64-apple-darwin.tar.xz](https://github.com/bruceadams/available-enis/releases/latest/download/available-enis-aarch64-apple-darwin.tar.xz) | macOS Apple Silicon | [checksum](https://github.com/bruceadams/available-enis/releases/latest/download/available-enis-aarch64-apple-darwin.tar.xz.sha256) |
+| [available-enis-x86_64-apple-darwin.tar.xz](https://github.com/bruceadams/available-enis/releases/latest/download/available-enis-x86_64-apple-darwin.tar.xz) | macOS Intel | [checksum](https://github.com/bruceadams/available-enis/releases/latest/download/available-enis-x86_64-apple-darwin.tar.xz.sha256) |
+| [available-enis-x86_64-pc-windows-msvc.zip](https://github.com/bruceadams/available-enis/releases/latest/download/available-enis-x86_64-pc-windows-msvc.zip) | Windows x64 | [checksum](https://github.com/bruceadams/available-enis/releases/latest/download/available-enis-x86_64-pc-windows-msvc.zip.sha256) |
+| [available-enis-x86_64-unknown-linux-gnu.tar.xz](https://github.com/bruceadams/available-enis/releases/latest/download/available-enis-x86_64-unknown-linux-gnu.tar.xz) | Linux x64 | [checksum](https://github.com/bruceadams/available-enis/releases/latest/download/available-enis-x86_64-unknown-linux-gnu.tar.xz.sha256) |
+| [available-enis-x86_64-unknown-linux-musl.tar.xz](https://github.com/bruceadams/available-enis/releases/latest/download/available-enis-x86_64-unknown-linux-musl.tar.xz) | musl Linux x64 | [checksum](https://github.com/bruceadams/available-enis/releases/latest/download/available-enis-x86_64-unknown-linux-musl.tar.xz.sha256) |
+| [available-enis-x86_64-pc-windows-msvc.msi](https://github.com/bruceadams/available-enis/releases/latest/download/available-enis-x86_64-pc-windows-msvc.msi) | Windows x64 | [checksum](https://github.com/bruceadams/available-enis/releases/latest/download/available-enis-x86_64-pc-windows-msvc.msi.sha256) |
+
+## Building
+
+This is a straightforward [Rust](https://www.rust-lang.org/) project.
+`cargo build` should _just work_.
+
 ## Background
 
 I've been using the following Bash which uses the AWS CLI.
