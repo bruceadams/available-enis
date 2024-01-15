@@ -1,6 +1,6 @@
 # Available AWS Elastic Network Interfaces
 
-Summarize the status of every AWS Elastic Network Interface, eni.
+Summarize the status of every AWS Elastic Network Interface, ENI.
 Optionally, delete every ENI with a status of "available".
 
 This is a very narrow tool that pretty much does one thing:
@@ -8,7 +8,7 @@ cleanup stray Elastic Network Interfaces that seem to fall
 out of a very complex terraform configuration that we build
 and tear down regularly.
 
-This is _very_ fast. The deletes all run concurrently.
+This is _very_ fast. The deletes all available ENIs concurrently.
 
 ## Built in help
 
@@ -100,7 +100,10 @@ cargo binstall available-enis
 
 ## Building
 
-This is a straightforward [Rust](https://www.rust-lang.org/) project.
+This is a straightforward [Rust](https://www.rust-lang.org/)
+project using [Cargo](doc.rust-lang.org/cargo).
+After installing [Rust](https://www.rust-lang.org/)
+(I highly recommend using [Rustup](https://rustup.rs/)),
 `cargo build` should _just work_.
 
 ## Background
