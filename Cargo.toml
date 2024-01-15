@@ -5,6 +5,13 @@ authors = ["Bruce Adams <bruce.adams@acm.org>"]
 description = "Count and optionally delete available AWS Elastic Networks"
 edition = "2021"
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/bruceadams/available-enis"
+
+[package.metadata.wix]
+upgrade-guid = "BCCF2DFE-41A8-41AE-85A0-291B19109B35"
+path-guid = "BF164175-9BB8-4878-B495-5C5592417C18"
+license = false
+eula = false
 
 [dependencies]
 anyhow = "1.0.79"
@@ -25,3 +32,25 @@ features = ["macros", "rt-multi-thread"]
 [dependencies.tracing-subscriber]
 features = ["env-filter"]
 version = "0.3.18"
+
+# The profile that 'cargo dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
+
+# Config for 'cargo dist'
+[workspace.metadata.dist]
+# The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
+cargo-dist-version = "0.7.1"
+# The installers to generate for each app
+installers = ["shell", "powershell", "homebrew", "msi"]
+# Target platforms to build apps for (Rust target-triple syntax)
+targets = ["x86_64-unknown-linux-gnu", "aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-musl", "x86_64-pc-windows-msvc"]
+# CI backends to support
+ci = ["github"]
+# A GitHub repo to push Homebrew formulas to
+tap = "bruceadams/homebrew-utilities"
+# Publish jobs to run in CI
+publish-jobs = ["homebrew"]
+# Publish jobs to run in CI
+pr-run-mode = "plan"
