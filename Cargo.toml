@@ -1,6 +1,6 @@
 [package]
 name = "available-enis"
-version = "0.2.1"
+version = "0.3.0"
 authors = ["Bruce Adams <bruce.adams@acm.org>"]
 description = "Count and optionally delete available AWS Elastic Networks"
 edition = "2021"
@@ -15,18 +15,18 @@ eula = false
 
 [dependencies]
 anyhow = "1.0.79"
-aws-config = "1.1.2"
-aws-types = "1.1.2"
-aws-sdk-ec2 = "1.14.0"
+aws-config = "1.1.5"
+aws-types = "1.1.5"
+aws-sdk-ec2 = "1.19.0"
 futures = "0.3.30"
 tracing = "0.1.40"
 
 [dependencies.clap]
 features = ["derive", "wrap_help"]
-version = "4.4.16"
+version = "4.5.0"
 
 [dependencies.tokio]
-version = "1.35.1"
+version = "1.36.0"
 features = ["macros", "rt-multi-thread"]
 
 [dependencies.tracing-subscriber]
@@ -41,11 +41,11 @@ lto = "thin"
 # Config for 'cargo dist'
 [workspace.metadata.dist]
 # The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
-cargo-dist-version = "0.7.1"
+cargo-dist-version = "0.10.0"
 # The installers to generate for each app
-installers = ["shell", "powershell", "homebrew", "msi"]
+installers = ["shell", "powershell", "npm", "homebrew", "msi"]
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["x86_64-unknown-linux-gnu", "aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-musl", "x86_64-pc-windows-msvc"]
+targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-unknown-linux-musl", "x86_64-pc-windows-msvc"]
 # CI backends to support
 ci = ["github"]
 # A GitHub repo to push Homebrew formulas to
@@ -54,3 +54,7 @@ tap = "bruceadams/homebrew-utilities"
 publish-jobs = ["homebrew"]
 # Publish jobs to run in CI
 pr-run-mode = "plan"
+# The archive format to use for windows builds (defaults .zip)
+windows-archive = ".tar.gz"
+# The archive format to use for non-windows builds (defaults .tar.xz)
+unix-archive = ".tar.gz"

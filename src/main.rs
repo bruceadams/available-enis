@@ -8,11 +8,11 @@ use std::{collections::HashMap, time::Duration};
 use tracing::{debug, error};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
-/// Summarize the status of every AWS Elastic Network Interface, eni.
+/// Summarize the status of every AWS Elastic Network Interface, ENI.
 /// Optionally, delete every ENI with a status of "available".
 ///
 /// You can set the environment variable `RUST_LOG` to
-/// adjust logging, for example `RUST_LOG=trace aws-caller-id`
+/// adjust logging, for example `RUST_LOG=trace available-enis`
 #[derive(Clone, Debug, Parser)]
 #[command(about, author, version)]
 struct MyArgs {

@@ -1,3 +1,13 @@
+# Version 0.3.0
+
+- Publish package to npm.
+- Repair documentation errors.
+- Update dependencies.
+
+# Version 0.2.1
+
+Add install, download & build into README.
+
 # Version 0.2.0
 
 ```text

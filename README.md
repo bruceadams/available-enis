@@ -32,11 +32,11 @@ Options:
 
 ```
 available-enis --help
-Summarize the status of every AWS Elastic Network Interface, eni.
-Optionally, delete every ENI with a status of "available".
+Summarize the status of every AWS Elastic Network Interface,
+ENI. Optionally, delete every ENI with a status of "available".
 
-You can set the environment variable `RUST_LOG` to adjust logging, for
-example `RUST_LOG=trace aws-caller-id`
+You can set the environment variable `RUST_LOG` to adjust
+logging, for example `RUST_LOG=trace available-enis`
 
 Usage: available-enis [OPTIONS]
 
@@ -47,12 +47,14 @@ Options:
   -p, --profile <PROFILE>
           AWS profile to use.
 
-          This overrides the standard (and complex!) AWS profile handling.
+          This overrides the standard (and complex!) AWS
+          profile handling.
 
   -r, --region <REGION>
           AWS region to target.
 
-          This override the standard (and complex!) AWS region handling.
+          This override the standard (and complex!) AWS region
+          handling.
 
   -h, --help
           Print help (see a summary with '-h')
@@ -73,6 +75,18 @@ curl --proto '=https' --tlsv1.2 -LsSf https://github.com/bruceadams/available-en
 
 ```sh
 irm https://github.com/bruceadams/available-enis/releases/latest/download/available-enis-installer.ps1 | iex
+```
+
+### Install prebuilt binaries into your npm project
+
+```sh
+npm install available-enis
+```
+
+or install and run the binary using `npx`
+
+```sh
+npx available-enis --help
 ```
 
 ### Install prebuilt binaries via Homebrew
