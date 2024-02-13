@@ -1,3 +1,7 @@
+# Version 0.3.1
+
+Fix the download links in README.md. `gz` files, no longer `xz` files.
+
 # Version 0.3.0
 
 - Publish package to npm.
